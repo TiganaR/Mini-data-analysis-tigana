@@ -64,6 +64,99 @@ Three attributes of steam_games:
 ## Top 2 data sets:
 I am most interested in the data sets flow_sample and cancer_sample.
 
-I am intrested 
+I am interested for reasons.
 
 ## Top Choice: Flow.
+
+# Task 2
+This is my main analysis.
+```{r}
+head(flow_sample)
+```
+
+Want to: 
+1) Mutate a variable. 
+```{r}
+table(flow_sample$sym)
+sum(is.na(flow_sample$sym))
+```
+Most of the values for sym are B. There are 119 missing values. I am going to mutate this column into the catagories B and other.
+```{r}
+flow_sample <- flow_sample %>% 
+  select(-station_id) %>% 
+  mutate(sym = ifelse(is.na(sym), "Other",
+                      ifelse(sym == "B", "B", "Other")))
+
+table(flow_sample$sym)
+head(flow_sample)
+```
+I also removed the station id as there was only data from one station.
+
+2)Plot distribution of flow
+```{r}
+ggplot(flow_sample) +
+  aes(x=flow) +
+  geom_histogram() +
+  labs(
+    title = "Frequency distribution of flow",
+    x = "Flow",
+    y = "Absolute frequency"
+  )
+```
+
+
+3) flow vs year
+
+```{r}
+flow_sample %>% 
+  group_by(year) %>% 
+  summarise(cumflow = sum(flow, na.rm = T)) %>% 
+  ggplot() +
+  aes(x=year, y=cumflow) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = unique(flow_sample$year)) +
+  geom_smooth() +
+  labs(
+    title = "Flow along the time",
+    x = "Year",
+    y = "Flow"
+  ) +
+  theme(axis.text.x = element_text(angle = 90)) 
+```
+
+3) flow of a particular month
+
+```{r}
+flow_sample %>% 
+  group_by(month) %>% 
+  summarise(cumflow = sum(flow, na.rm = T)) %>% 
+  ggplot() +
+  aes(x=month, y=cumflow) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = unique(flow_sample$month)) +
+  labs(
+    title = "Cumulative flow along the year",
+    caption = "Period: 1909 to 2018",
+    x = "Month",
+    y = "Flow"
+  ) 
+```
+
+4) boxplot frequency
+
+```{r}
+ggplot(flow_sample) +
+  aes(x=sym, y=flow, fill=sym) +
+  geom_boxplot() +
+  facet_wrap(~sym, scales = "free") +
+  labs(
+    title = "Boxplot of flow by sym",
+    x = "Sym",
+    y = "Flow"
+  ) +
+  theme(legend.position = "none") 
+```
+
+Questions:
