@@ -1,1 +1,69 @@
-Choose 4 data sets
+---
+title: Mini Data Analysis
+Author: Tigana Runte
+output: github_document
+---
+
+# Task 1
+
+
+## Choose 4 data sets
+After an initial pass I have selected the following data sets to explore in more detail:
+
+1: flow_sample
+2: vancouver_trees
+3: cancer_sample
+4: steam_games
+
+## Bellow I explore these 3 attributes of the data sets from the datateacher package.
+
+First I load needed packages.
+```{r}
+#install.packages("devtools")
+#devtools::install_github("UBC-MDS/datateachr")
+```
+```{r}
+#install.packages("datateachr")
+library(datateachr)
+library(tidyverse)
+```
+### Now I look at some attributes of the data set flow_sample.
+
+```{r}
+glimpse(flow_sample)
+```
+Three attributes of flow_sample:
+
+
+### Next we look at the data set vancouver_trees.
+
+
+```{r}
+glimpse(vancouver_trees)
+
+```
+Three attributes of vancouver_trees:
+
+###Next we look at the data set cancer_sample
+
+```{r}
+glimpse(cancer_sample)
+
+```
+Three attributes of cancer_sample:
+
+### Finally we explore the steam_games data set
+
+```{r}
+glimpse(steam_games)
+
+```
+Three attributes of steam_games:
+
+
+## Top 2 data sets:
+I am most interested in the data sets flow_sample and cancer_sample.
+
+I am intrested 
+
+## Top Choice: Flow.

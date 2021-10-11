@@ -1,1 +1,22 @@
+```{r}
+#install.packages("devtools")
+#devtools::install_github("UBC-MDS/datateachr")
+```
+```{r}
+#install.packages("datateacher")
+library(datateachr)
+library(tidyverse)
+```
+
 This is my main analysis.
+```{r}
+head(flow_sample)
+```
+Want to: 
+1) Plot distribution of flow
+
+```{r}
+
+2) flow vs year
+3) flow of a particular year
+4) boxplot frequency

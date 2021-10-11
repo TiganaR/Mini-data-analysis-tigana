@@ -1,0 +1,250 @@
+---
+title: Mini Data Analysis
+Author: Tigana Runte
+output: github_document
+---
+
+# Task 1
+
+
+## Choose 4 data sets
+After an initial pass I have selected the following data sets to explore in more detail:
+
+1: `flow_sample`
+2: `vancouver_trees`
+3: `cancer_sample`
+4: `steam_games`
+
+## Bellow I explore these 3 attributes of the data sets from the datateacher package.
+
+First I load needed packages.
+```{r}
+#install.packages("devtools")
+#devtools::install_github("UBC-MDS/datateachr")
+```
+```{r}
+#install.packages("datateachr")
+library(datateachr)
+library(tidyverse)
+```
+### Now I look at some attributes of the data set `flow_sample`.
+
+```{r}
+glimpse(flow_sample)
+
+```
+Three attributes of `flow_sample`:
+
+1) It has 7 columns and 218 rows. Please note I later removed the column `station_id` as there was only the one value. Unfortunately, this had the unintended consequence of removing the variable up here where I glimpse the data as well. 
+
+2) Has both quantitative and qualitative variables. 
+
+3) There appears to be quite a few missing values in this data set.
+
+### Next we look at the data set `vancouver_trees`.
+
+
+```{r}
+glimpse(vancouver_trees)
+
+```
+Three attributes of `vancouver_trees`:
+
+1) It has 20 columns and 146,611 rows.
+
+2) Has quantitative (<dbl>) and qualitative (<chr>) variables. As well as a date variable( <date>).
+
+3) The qualitative variables appear to mostly be categorical. eg: `genus_name`.
+
+###Next we look at the data set `cancer_sample`
+
+```{r}
+glimpse(cancer_sample)
+
+```
+Three attributes of `cancer_sample`:
+
+1) There are 32 columns and 569 rows.
+
+2) There is only one qualitative variable `diagnosis`, the rest are quantitative.
+
+3) Except for the variable `diagnosis`, all variables appear to have an associated standard error. For example we have the variables `area_mean` and `area_se`
+
+### Finally we explore the `steam_games` data set
+
+```{r}
+glimpse(steam_games)
+
+```
+Three attributes of `steam_games`:
+1) There are 21 columns and 40,833 rows.
+
+2)There are both quantitative and qualitative variables.
+
+3) There are multiple qualitative variables that take free form text.
+
+
+## Top 2 data sets:
+I am most interested in the data sets `flow_sample` and `cancer_sample`.
+
+I am interested in the `cancer_sample` data set for personal reasons. My father was recently diagnosed with cancer and it has cause me to become very interested in cancer research. 
+
+I am interested in the `flow_sample` data set as it has multiple missing values and I am interested to see what effect this might have on the analysis. Also I lived in Banff for a while, and spent lots of time on the bow river. 
+
+## Top Choice: `Flow_sample`.
+
+I eventually settled on `flow_sample` as my main data set. There are only 7 (6 because the 7th is in the void) columns which I believe will make it easier to give each variable attention in its relationship to flow. There are also multiple missing values and I want to explore different ways to work with this.
+
+# Task 2
+## This is my main analysis.
+```{r}
+head(flow_sample)
+```
+
+ 
+### 1) The first thing I Want to do is to Mutate a variable. 
+```{r}
+table(flow_sample$sym)
+sum(is.na(flow_sample$sym))
+```
+Most of the values for sym are "B". There are 119 missing values and 2 values for "A" and "E" respectively. I am going to mutate this column into the categories B and other. I also removed the column `station_id` as discussed above.
+```{r}
+flow_sample <- flow_sample %>% 
+  #select(-station_id) %>% 
+  mutate(sym = ifelse(is.na(sym), "Other",
+                      ifelse(sym == "B", "B", "Other")))
+
+table(flow_sample$sym)
+head(flow_sample)
+```
+
+
+### 2)Plot distribution of flow
+```{r}
+ggplot(flow_sample) +
+  aes(x=flow) +
+  geom_histogram() +
+  labs(
+    title = "Frequency distribution of flow",
+    x = "Flow",
+    y = "Absolute frequency"
+  )
+```
+It appears `flow` takes on a large range of values. There is a large concentration of flow rates under 10 m^3/s, while the rest of the values seem to be concentrated between 100 and 400 m^3/s with an outlier of 466 (flood of 2013). This potentialy represents the split `minimum` and `maximum` values for `extreme_type`.
+
+```{r}
+sum(is.na(flow_sample$flow))
+
+```
+I also quickly checked to see if `flow` has any missing values. There are only two. 
+
+### 3) flow vs year
+
+```{r}
+flow_sample %>% 
+  group_by(year) %>% 
+  summarise(cumflow = sum(flow, na.rm = T)) %>% 
+  ggplot() +
+  aes(x=year, y=cumflow) +
+  geom_line() +
+  geom_point() +
+  geom_smooth() +
+  labs(
+    title = "Flow across the years",
+    x = "Year",
+    y = "Flow"
+  )  
+```
+We can see from the plot that the overall `flow` has decreased slightly over the years, with a notable peak in 2013 when we know there was a flood. However, on the shorter scale, (year to year), there is a lot of variation. I would like to further explore why this is.
+
+### 4) flow of a particular month
+
+I would like to look at the flow rate by `month`. Perhaps the differences year to year can be partially explained by the month in which the data was collected.
+
+```{r}
+flow_sample %>% 
+  group_by(month) %>% 
+  summarise(cumflow = sum(flow, na.rm = T)) %>% 
+  ggplot() +
+  aes(x=month, y=cumflow) +
+  geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = unique(flow_sample$month)) +
+  labs(
+    title = "Cumulative flow along the year",
+    caption = "Period: 1909 to 2018",
+    x = "Month",
+    y = "Flow"
+  ) 
+```
+There seems to be a strong relationship between `month` and `flow`. Cumulative flow is very low from month 1 to 4, and, 8-12. It seems likely this can be explained by the seasons in which the flow was collected, with the warmer season having much higher flow rates.  I just also want to note that there are no observations for months 9 and 10. 
+
+
+### 5) Boxplot frequency `B` vs `Other`
+
+```{r}
+ggplot(flow_sample) +
+  aes(x=sym, y=flow, fill=sym) +
+  geom_boxplot() +
+  facet_wrap(~sym, scales = "free") +
+  labs(
+    title = "Boxplot of flow by sym",
+    x = "Sym",
+    y = "Flow"
+  ) +
+  theme(legend.position = "none") 
+```
+There are a few things to note here. We can see that all flow values associated with `B` are very low with a small IQR and only 1 outlier. The flow values associated with `Other` are much higher with a much larger IQR and more outliers. This tells us that flow rates that were collected in icey conditions `B`, are much lower than those collected at other times. However there are 119 missing values and I worry this will effect the interpretation. I would like to approximate the effect of icy vs not icy conditions using a new variable seasons. This should approximate the weather conditions that they were collected in while reducing the issue of the missing values.
+
+
+
+### 6) Boxplot frequency `seasons`
+First I make the new variable `season` to show what season the sample was collected in. 
+```{r}
+
+flow_sample <- flow_sample %>% 
+  mutate(season = case_when(
+    month > 5 & month < 9 ~ "Summer",
+    month > 2 & month < 6 ~ "Spring",
+    (month > 0 & month < 3) | month == 12  ~ "Winter",
+    month > 8 & month < 12 ~ "Autumn",
+    TRUE ~ as.character(month)
+  ) %>% as.factor()
+  )
+
+```
+
+Next I created boxplots for flow based on season.
+```{r}
+flow_sample <- flow_sample %>% 
+  mutate(Season_Flow = ifelse(season == "Spring" | season == "Summer", "High Flow", "Low Flow"))
+
+flow_sample %>% 
+  filter(!is.na(season)) %>% 
+  ggplot() +
+  aes(x=season, y=flow, fill= season) +
+  geom_boxplot() +
+  facet_wrap(~Season_Flow, scales = "free") +
+  labs(
+    title = "Boxplot of flow by Season",
+    x = "Season",
+    y = "Flow"
+  ) +
+  theme(legend.position = "none") 
+As you can see `flow` differs significantly based on `season`. Flow rates in Summer and spring are quite high, while those collected in winter and autumn are all less than 10 m^3/s. There is also a much smaller range of values for the Autumn and Winter flow values.
+
+
+## Research Questions:
+
+I am interested in exploring the following research questions:
+
+1) What is the relationship between flow and month. I.e. does the month the flow rate was recorded effect flow?
+
+2) Can we accurately predict flow from season alone? 
+
+3) What effect does month have on extreme_type?
+
+4) What are the long term trends in flow? Can we use this historical data to predict future flow patterns?
+
+5) Does the historical data allow us to see a trend in flow that could be correlated with other climate data such as temperature and ice  
+
