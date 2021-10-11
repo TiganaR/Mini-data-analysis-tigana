@@ -231,6 +231,8 @@ flow_sample %>%
     y = "Flow"
   ) +
   theme(legend.position = "none") 
+```
+
 As you can see `flow` differs significantly based on `season`. Flow rates in Summer and spring are quite high, while those collected in winter and autumn are all less than 10 m^3/s. There is also a much smaller range of values for the Autumn and Winter flow values.
 
 
