@@ -144,7 +144,7 @@ print(flow_sample1.1)
 
 ### Column 2 `extreme_type`
 
-I am going to widen the data so we see the flow of each `extreme_type` by making `extreme_type` it's own column.
+I am going to widen the data so we see the flow of each `extreme_type` by  making `extreme_type` it's own column.
 ```{r}
 (flow_sample2 <- flow_sample %>%
   pivot_wider(id_cols = c(-extreme_type, -flow),
