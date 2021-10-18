@@ -1,0 +1,240 @@
+---
+title: "Data-Analysis-Milestone 2"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(datateachr)
+library(tidyverse)
+```
+
+```{r}
+
+flow_sample <- flow_sample %>% 
+  mutate(season = case_when(
+    month > 5 & month < 9 ~ "Summer",
+    month > 2 & month < 6 ~ "Spring",
+    (month > 0 & month < 3) | month == 12  ~ "Winter",
+    month > 8 & month < 12 ~ "Autumn",
+    TRUE ~ as.character(month)
+  ) %>% as.factor()
+  )
+
+```
+
+# Task 1
+
+## Research Questions:
+
+Here are the research questions I identified in milestone 1. I have reworked them slightly to better fit the tasks of this milestone:
+
+1) What is the relationship between flow and season.
+
+2) Can we accurately predict flow from month alone? 
+
+3) What effect does month have on extreme_type?
+
+4) What is the relationship between year and flow?
+
+## Task 1.2
+
+### Exploring question 1
+
+First I will compute the range, mean, sd and variance for flow (numerical) across season (catagorical)
+```{r}
+group_by(flow_sample, season) %>%
+  summarize(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+```
+Now I create a graph .
+```{r}
+
+```
+### Exploring question 2
+
+I compute the range, mean, median, and sd across month
+```{r}
+group_by(flow_sample, month) %>%
+  summarize(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+```
+
+### Exploring question 3
+I compute the number of observations for `extreme_type` (catagorical)
+```{r}
+flow_sample %>%
+  count(extreme_type)
+```
+Now I graph extreme and month
+```{r}
+
+```
+
+
+
+### question 4
+I will create a new (ordinal) categorical variable called decades. 
+
+```{r}
+
+flow_sample <- flow_sample %>% 
+  mutate(decades = case_when(
+    year > 1900 & year < 1930 ~ "1900-1929",
+    year > 1929 & year < 1960 ~ "1930-1959",
+    year > 1959 & year < 1990  ~ "1960-1989",
+    year > 1989 & year < 2020 ~ "1990-2019",
+    TRUE ~ as.character(year)
+  ) %>% as.factor()
+  )
+
+```
+
+Now I will create a graph of flow and decades
+
+```{r}
+flow_sample %>% 
+  group_by(decades) %>% 
+   
+  ggplot() +
+  aes(x=decades, y=flow) +
+  geom_line() +
+  geom_point() +
+  labs(
+    title = "Flow within decades",
+    x = "Decades",
+    y = "Flow"
+  )  
+```
+
+## Task 1.3
+
+### Revised questions
+
+Is the downward trend across `decades` statistically significant?
+
+
+
+
+# Task 2
+Here I will tidy the data. Lets take a quick look at `flow_sample`. This is the before 
+```{r}
+head(flow_sample)
+```
+
+## Task 2.1
+
+### Cloumn 1 `Year`
+
+I will unite the year, month, and day to make date.
+
+```{r}
+(flow_sample1 <- flow_sample %>%
+    unite(col = "date", c(year, month, day), sep = "-"))
+print(flow_sample1)
+```
+Now I separate them again.
+
+```{r}
+(flow_sample1.1 <- flow_sample1 %>%
+    separate(date, into = c("year", "month", "day"), sep = ""))
+print(flow_sample1.1)
+```
+
+### Column 2 `extreme_type`
+
+I am going to widen the data so we see the flow of each `extreme_type` by making `extreme_type` it's own column.
+```{r}
+(flow_sample2 <- flow_sample %>%
+  pivot_wider(id_cols = c(-extreme_type, -flow),
+              names_from = extreme_type,
+              values_from = flow))
+arrange_all(flow_sample2)
+```
+It is clear that there are many missing values. First I am going to check how many for maximum and how many for minimum.
+
+```{r}
+sum(is.na(flow_sample2$maximum))
+sum(is.na(flow_sample2$minimum))
+```
+Most of these missing values are not an issue as only data on one extreme type was collected per year. I want to see the rows where both are NA.
+
+```{r}
+sum(is.na(flow_sample2$maximum) & is.na(flow_sample2$minimum) )
+
+```
+There are only 2 rows that have missing values for both extreme types. Since these rows have no flow information I am going to remove them. 
+
+```{r}
+which(is.na(flow_sample2$maximum) & is.na(flow_sample2$minimum) )
+
+```
+These are the two rows I will remove.
+
+```{r}
+flow_sample2.1 <- flow_sample2[-c(110,111),]
+arrange_all(flow_sample2.1)
+```
+Now I will put it back. 
+
+```{r}
+(flow_sample2.2 <- flow_sample2.1 %>% 
+  pivot_longer(cols = c(-station_id, -year, -month, -day, -sym, -season, -decades ), 
+               names_to  = "extreme_type", 
+               values_to = "flow"))
+arrange_all(flow_sample2.2)
+```
+You can see that we once again have variable `extreme_type` with values minimum and maximum.
+
+### Column 3 `month`
+### Column 4 `day`
+### Column 5 `flow`
+### Column 6 `sym`
+First lets look and see how many missing values there are.
+```{r}
+sum(is.na(flow_sample$sym))
+```
+That is a lot of missing data. Once again I am going to remove rows 110 and 111.
+
+```{r}
+flow_sample6 <- flow_sample[-c(110,111),]
+arrange_all(flow_sample2.1)
+```
+
+Lets look at the breakdown of the values of this variable. 
+
+```{r}
+table(flow_sample6$sym)
+```
+It looks like most of the values are B with only 4 being divided between A and E. I am going to change this variable to have values B or other.
+```{r}
+flow_sample6.1 <- flow_sample6 %>% 
+  
+  mutate(sym = ifelse(is.na(sym), "Other",
+                      ifelse(sym == "B", "B", "Other")))
+
+table(flow_sample$sym)
+head(flow_sample)
+
+```
+This should have removed missing values from this variable. Let's check.
+
+```{r}
+sum(is.na(flow_sample6.1$sym))
+```
+Great! 
+### Column 7 `season`
+First I will create a subset of `flow_sample`
+containing only the season `Winter`.
+
+```{r}
+(flow_sample7 <- flow_sample %>%
+   filter(season == "Winter"))
+print(flow_sample7)
+```
+
+### Column 8 `decades`
+
+## Task 2.3
+
