@@ -1,5 +1,7 @@
-Mini Data Analysis
+Mini-Data-Analysis
 ================
+
+# Mini Data Analysis
 
 # Task 1
 
@@ -27,30 +29,30 @@ library(tidyverse)
 ```
 
     ## Warning: package 'tidyverse' was built under R version 4.0.5
-
+    
     ## -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
-
+    
     ## v ggplot2 3.3.5     v purrr   0.3.4
     ## v tibble  3.1.4     v dplyr   1.0.7
     ## v tidyr   1.1.3     v stringr 1.4.0
     ## v readr   2.0.1     v forcats 0.5.1
-
+    
     ## Warning: package 'ggplot2' was built under R version 4.0.5
-
+    
     ## Warning: package 'tibble' was built under R version 4.0.5
-
+    
     ## Warning: package 'tidyr' was built under R version 4.0.5
-
+    
     ## Warning: package 'readr' was built under R version 4.0.5
-
+    
     ## Warning: package 'purrr' was built under R version 4.0.5
-
+    
     ## Warning: package 'dplyr' was built under R version 4.0.5
-
+    
     ## Warning: package 'stringr' was built under R version 4.0.5
-
+    
     ## Warning: package 'forcats' was built under R version 4.0.5
-
+    
     ## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
     ## x dplyr::filter() masks stats::filter()
     ## x dplyr::lag()    masks stats::lag()
@@ -311,7 +313,7 @@ ggplot(flow_sample) +
 ```
 
     ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
-
+    
     ## Warning: Removed 2 rows containing non-finite values (stat_bin).
 
 ![](Data-Analysis_files/figure-gfm/unnamed-chunk-10-1.png)<!-- --> It
@@ -380,7 +382,7 @@ flow_sample %>%
 ```
 
     ## Warning: Removed 1 row(s) containing missing values (geom_path).
-
+    
     ## Warning: Removed 1 rows containing missing values (geom_point).
 
 ![](Data-Analysis_files/figure-gfm/unnamed-chunk-13-1.png)<!-- --> There

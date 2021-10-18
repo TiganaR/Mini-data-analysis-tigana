@@ -1,6 +1,6 @@
 ---
 title: "Data-Analysis-Milestone 2"
-output: html_document
+output: github_document
 ---
 
 ```{r setup, include=FALSE}
