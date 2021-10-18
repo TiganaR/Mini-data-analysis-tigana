@@ -10,6 +10,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(datateachr)
 library(tidyverse)
+library(plyr)
+library(ggridges)
 ```
 
 ```{r}
@@ -36,7 +38,7 @@ Here are the research questions I identified in milestone 1. I have reworked the
 
 2) Can we accurately predict flow from month alone? 
 
-3) What effect does month have on extreme_type?
+3) What effect does extreme_type have on flow?
 
 4) What is the relationship between year and flow?
 
@@ -44,21 +46,47 @@ Here are the research questions I identified in milestone 1. I have reworked the
 
 ### Exploring question 1
 
-First I will compute the range, mean, sd and variance for flow (numerical) across season (catagorical)
+First I will compute the statistics for flow for the different seasons. First `Summer`
 ```{r}
-group_by(flow_sample, season) %>%
-  summarize(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+flow_sample %>% filter(season == "Summer") %>% select(flow) %>% summary()
 ```
-Now I create a graph .
-```{r}
+`Spring`
 
+```{r}
+flow_sample %>% filter(season == "Spring") %>% select(flow) %>% summary()
 ```
+
+`Autumn`
+```{r}
+flow_sample %>% filter(season == "Autumn") %>% select(flow) %>% summary()
+```
+`Winter`
+
+```{r}
+flow_sample %>% filter(season == "Winter") %>% select(flow) %>% summary()
+```
+
+
+Now I find the mean of flow for the 4 seasons. .
+```{r}
+mflow = ddply(flow_sample, "season", summarise, grp.mean=mean(flow))
+mflow
+```
+
+Finally I create a plot
+```{r}
+plot1 <- ggplot(flow_sample, aes(x= flow, fill=season, color = season)) + geom_histogram(position="identity", alpha=0.5)
+plot1 +   geom_vline(data=mflow, aes(xintercept=grp.mean, color=season), linetype="dashed")
+```
+
 ### Exploring question 2
 
 I compute the range, mean, median, and sd across month
 ```{r}
+
 group_by(flow_sample, month) %>%
-  summarize(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+  summarise(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+
 ```
 
 ### Exploring question 3
@@ -69,6 +97,9 @@ flow_sample %>%
 ```
 Now I graph extreme and month
 ```{r}
+flow_sample %>%
+  ggplot(aes(x=flow, y=extreme_type)) +  
+  geom_density_ridges(alpha=0.2, aes(fill= extreme_type))
 
 ```
 
