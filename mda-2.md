@@ -36,6 +36,13 @@ library(tidyverse)
     ## x dplyr::lag()    masks stats::lag()
 
 ``` r
+library(dplyr)
+library(ggridges)
+```
+
+    ## Warning: package 'ggridges' was built under R version 4.0.5
+
+``` r
 flow_sample <- flow_sample %>% 
   mutate(season = case_when(
     month > 5 & month < 9 ~ "Summer",
@@ -58,7 +65,7 @@ reworked them slightly to better fit the tasks of this milestone:
 
 2)  Can we accurately predict flow from month alone?
 
-3)  What effect does month have on extreme\_type?
+3)  What effect does extreme\_type have on flow?
 
 4)  What is the relationship between year and flow?
 
@@ -66,47 +73,98 @@ reworked them slightly to better fit the tasks of this milestone:
 
 ### Exploring question 1
 
-First I will compute the range, mean, sd and variance for flow
-(numerical) across season (catagorical)
+First I will compute the statistics for flow for the different seasons.
+First `Summer`
 
 ``` r
-group_by(flow_sample, season) %>%
-  summarize(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+flow_sample %>% filter(season == "Summer") %>% select(flow) %>% summary()
 ```
 
-    ## `summarise()` has grouped output by 'season'. You can override using the `.groups` argument.
+    ##       flow      
+    ##  Min.   :107.0  
+    ##  1st Qu.:167.0  
+    ##  Median :209.0  
+    ##  Mean   :215.3  
+    ##  3rd Qu.:248.0  
+    ##  Max.   :466.0
 
-    ## # A tibble: 10 x 5
-    ## # Groups:   season [5]
-    ##    season      m      r     sd      var
-    ##    <fct>   <dbl>  <dbl>  <dbl>    <dbl>
-    ##  1 Autumn   6.11   5.21  0.707    0.500
-    ##  2 Autumn   6.11   7.16  0.707    0.500
-    ##  3 Spring  55.5    4.14 85.6   7327.   
-    ##  4 Spring  55.5  289    85.6   7327.   
-    ##  5 Summer 215.   107    64.1   4111.   
-    ##  6 Summer 215.   466    64.1   4111.   
-    ##  7 Winter   6.21   3.62  0.966    0.934
-    ##  8 Winter   6.21   8.41  0.966    0.934
-    ##  9 <NA>    NA     NA    NA       NA    
-    ## 10 <NA>    NA     NA    NA       NA
+`Spring`
 
-Now I create a graph .
+``` r
+flow_sample %>% filter(season == "Spring") %>% select(flow) %>% summary()
+```
+
+    ##       flow       
+    ##  Min.   :  4.14  
+    ##  1st Qu.:  6.04  
+    ##  Median :  6.77  
+    ##  Mean   : 55.46  
+    ##  3rd Qu.:133.00  
+    ##  Max.   :289.00
+
+`Autumn`
+
+``` r
+flow_sample %>% filter(season == "Autumn") %>% select(flow) %>% summary()
+```
+
+    ##       flow      
+    ##  Min.   :5.210  
+    ##  1st Qu.:5.830  
+    ##  Median :6.140  
+    ##  Mean   :6.106  
+    ##  3rd Qu.:6.190  
+    ##  Max.   :7.160
+
+`Winter`
+
+``` r
+flow_sample %>% filter(season == "Winter") %>% select(flow) %>% summary()
+```
+
+    ##       flow     
+    ##  Min.   :3.62  
+    ##  1st Qu.:5.64  
+    ##  Median :6.09  
+    ##  Mean   :6.21  
+    ##  3rd Qu.:6.73  
+    ##  Max.   :8.41
+
+Now I find the mean of flow for the 4 seasons. .
+
+``` r
+#mflow = ddply(flow_sample, "season", summarise, grp.mean=mean(flow))
+#mflow
+```
+
+:( it was working before and then randomly stopped. I really don’t know
+why. Sorry.
+
+Finally I create a plot
+
+``` r
+#plot1 <- ggplot(flow_sample, aes(x= flow, fill=season, color = season)) + geom_histogram(position="identity", alpha=0.5)
+#plot1 +   geom_vline(data=mflow, aes(xintercept=grp.mean, color=season))
+```
 
 ### Exploring question 2
 
 I compute the range, mean, median, and sd across month
 
 ``` r
-group_by(flow_sample, month) %>%
-  summarize(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+flow_sample %>%
+  group_by(month) %>%
+  summarise(mean = mean(flow), 
+            r =range(flow), 
+            sd = sd(flow), 
+            var = var(flow))
 ```
 
     ## `summarise()` has grouped output by 'month'. You can override using the `.groups` argument.
 
     ## # A tibble: 22 x 5
     ## # Groups:   month [11]
-    ##    month      m      r     sd      var
+    ##    month   mean      r     sd      var
     ##    <dbl>  <dbl>  <dbl>  <dbl>    <dbl>
     ##  1     1   6.50   3.62  1.22     1.48 
     ##  2     1   6.50   8.41  1.22     1.48 
@@ -120,9 +178,57 @@ group_by(flow_sample, month) %>%
     ## 10     5 194.   289    41.8   1750.   
     ## # ... with 12 more rows
 
+I tried to create boxplots forwhat I thought would be the high and low
+flow months.
+
+``` r
+flow_sample <- flow_sample %>% 
+  mutate(month_Flow = ifelse( month == 4 | month ==5 | month == 6 | month==7| month== 8, "High Flow", "Low Flow"))
+
+flow_sample %>% 
+  filter(!is.na(month)) %>% 
+  ggplot() +
+  aes(x=month, y=flow, fill= month) +
+  geom_boxplot() +
+  facet_wrap(~month_Flow, scales = "free") +
+  labs(
+    title = "Boxplot of flow by Season",
+    x = "Season",
+    y = "Flow"
+  ) +
+  theme(legend.position = "none") 
+```
+
+    ## Warning: Continuous x aesthetic -- did you forget aes(group=...)?
+
+![](mda-2_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+flow_sample %>% 
+  group_by(month) %>% 
+  summarise(cumflow = sum(flow, na.rm = T)) %>% 
+  ggplot() +
+  aes(x=month, y=cumflow) +
+geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = unique(flow_sample$month)) +
+  labs(
+    title = "Cumulative flow along the year",
+  
+    x = "Month",
+    y = "Flow"
+  ) 
+```
+
+    ## Warning: Removed 1 row(s) containing missing values (geom_path).
+
+    ## Warning: Removed 1 rows containing missing values (geom_point).
+
+![](mda-2_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
 ### Exploring question 3
 
-I compute the number of observations for `extreme_type` (catagorical)
+I compute the number of observations for `extreme_type` (categorical)
 
 ``` r
 flow_sample %>%
@@ -135,7 +241,19 @@ flow_sample %>%
     ## 1 maximum        109
     ## 2 minimum        109
 
-Now I graph extreme and month
+Now I graph extreme and flow
+
+``` r
+flow_sample %>%
+  ggplot(aes(x=flow, y=extreme_type)) +  
+  geom_density_ridges(alpha=0.2, aes(fill= extreme_type))
+```
+
+    ## Picking joint bandwidth of 10.7
+
+    ## Warning: Removed 2 rows containing non-finite values (stat_density_ridges).
+
+![](mda-2_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ### question 4
 
@@ -152,6 +270,55 @@ flow_sample <- flow_sample %>%
   ) %>% as.factor()
   )
 ```
+
+``` r
+flow_sample %>% filter(decades == "1900-1929") %>% select(flow) %>% summary()
+```
+
+    ##       flow        
+    ##  Min.   :  4.560  
+    ##  1st Qu.:  6.112  
+    ##  Median :148.500  
+    ##  Mean   :125.778  
+    ##  3rd Qu.:223.250  
+    ##  Max.   :377.000  
+    ##  NA's   :2
+
+``` r
+flow_sample %>% filter(decades == "1930-1959") %>% select(flow) %>% summary()
+```
+
+    ##       flow        
+    ##  Min.   :  3.620  
+    ##  1st Qu.:  6.045  
+    ##  Median : 64.705  
+    ##  Mean   :108.498  
+    ##  3rd Qu.:205.250  
+    ##  Max.   :311.000
+
+``` r
+flow_sample %>% filter(decades == "1960-1989") %>% select(flow) %>% summary()
+```
+
+    ##       flow        
+    ##  Min.   :  4.140  
+    ##  1st Qu.:  6.135  
+    ##  Median : 75.965  
+    ##  Mean   :109.452  
+    ##  3rd Qu.:200.000  
+    ##  Max.   :317.000
+
+``` r
+flow_sample %>% filter(decades == "1990-2019") %>% select(flow) %>% summary()
+```
+
+    ##       flow        
+    ##  Min.   :  4.850  
+    ##  1st Qu.:  6.657  
+    ##  Median : 57.720  
+    ##  Mean   :101.415  
+    ##  3rd Qu.:167.250  
+    ##  Max.   :466.000
 
 Now I will create a graph of flow and decades
 
@@ -172,13 +339,24 @@ flow_sample %>%
 
     ## Warning: Removed 2 rows containing missing values (geom_point).
 
-![](mda-2_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](mda-2_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ## Task 1.3
 
-### Revised questions
+I am closer to answering my questions. Directly above I see that there
+is a lot of variation in flow within each 29 year period. However each
+of the bins seam to have a somewhat similar spread with perhaps a slight
+downward trend. The means do apear to be decreasing. There is the
+notable exception of the 2013 flood.
 
-Is the downward trend across `decades` statistically significant?
+There is obviously strong relationships between time of year (`month`
+and `season`), `extreme_type` and `flow`, but is one significantly
+better for predicting flow?
+
+Is the variation in flow year to year associated with the month in which
+flow was collected??
+
+These are the questions I find most interesting.
 
 # Task 2
 
@@ -189,19 +367,25 @@ is the before
 head(flow_sample)
 ```
 
-    ## # A tibble: 6 x 9
-    ##   station_id  year extreme_type month   day  flow sym   season decades  
-    ##   <chr>      <dbl> <chr>        <dbl> <dbl> <dbl> <chr> <fct>  <fct>    
-    ## 1 05BB001     1909 maximum          7     7   314 <NA>  Summer 1900-1929
-    ## 2 05BB001     1910 maximum          6    12   230 <NA>  Summer 1900-1929
-    ## 3 05BB001     1911 maximum          6    14   264 <NA>  Summer 1900-1929
-    ## 4 05BB001     1912 maximum          8    25   174 <NA>  Summer 1900-1929
-    ## 5 05BB001     1913 maximum          6    11   232 <NA>  Summer 1900-1929
-    ## 6 05BB001     1914 maximum          6    18   214 <NA>  Summer 1900-1929
+    ## # A tibble: 6 x 10
+    ##   station_id  year extreme_type month   day  flow sym   season month_Flow
+    ##   <chr>      <dbl> <chr>        <dbl> <dbl> <dbl> <chr> <fct>  <chr>     
+    ## 1 05BB001     1909 maximum          7     7   314 <NA>  Summer High Flow 
+    ## 2 05BB001     1910 maximum          6    12   230 <NA>  Summer High Flow 
+    ## 3 05BB001     1911 maximum          6    14   264 <NA>  Summer High Flow 
+    ## 4 05BB001     1912 maximum          8    25   174 <NA>  Summer High Flow 
+    ## 5 05BB001     1913 maximum          6    11   232 <NA>  Summer High Flow 
+    ## 6 05BB001     1914 maximum          6    18   214 <NA>  Summer High Flow 
+    ## # ... with 1 more variable: decades <fct>
+
+Given the definition I believe this data set is tidy. Each column is a
+variable `year`, `extreme_type` `month` `day`, `flow`, `sym` `season`
+and `decades`. Each row is an observation (one for each year). All of
+the cells contain the value for that variable on a given year.
 
 ## Task 2.1
 
-### Cloumn 1 `Year`
+Now I play with some functions from tidyverse.
 
 I will unite the year, month, and day to make date.
 
@@ -210,88 +394,83 @@ I will unite the year, month, and day to make date.
     unite(col = "date", c(year, month, day), sep = "-"))
 ```
 
-    ## # A tibble: 218 x 7
-    ##    station_id date      extreme_type  flow sym   season decades  
-    ##    <chr>      <chr>     <chr>        <dbl> <chr> <fct>  <fct>    
-    ##  1 05BB001    1909-7-7  maximum        314 <NA>  Summer 1900-1929
-    ##  2 05BB001    1910-6-12 maximum        230 <NA>  Summer 1900-1929
-    ##  3 05BB001    1911-6-14 maximum        264 <NA>  Summer 1900-1929
-    ##  4 05BB001    1912-8-25 maximum        174 <NA>  Summer 1900-1929
-    ##  5 05BB001    1913-6-11 maximum        232 <NA>  Summer 1900-1929
-    ##  6 05BB001    1914-6-18 maximum        214 <NA>  Summer 1900-1929
-    ##  7 05BB001    1915-6-27 maximum        236 <NA>  Summer 1900-1929
-    ##  8 05BB001    1916-6-20 maximum        309 <NA>  Summer 1900-1929
-    ##  9 05BB001    1917-6-17 maximum        174 <NA>  Summer 1900-1929
-    ## 10 05BB001    1918-6-15 maximum        345 <NA>  Summer 1900-1929
+    ## # A tibble: 218 x 8
+    ##    station_id date      extreme_type  flow sym   season month_Flow decades  
+    ##    <chr>      <chr>     <chr>        <dbl> <chr> <fct>  <chr>      <fct>    
+    ##  1 05BB001    1909-7-7  maximum        314 <NA>  Summer High Flow  1900-1929
+    ##  2 05BB001    1910-6-12 maximum        230 <NA>  Summer High Flow  1900-1929
+    ##  3 05BB001    1911-6-14 maximum        264 <NA>  Summer High Flow  1900-1929
+    ##  4 05BB001    1912-8-25 maximum        174 <NA>  Summer High Flow  1900-1929
+    ##  5 05BB001    1913-6-11 maximum        232 <NA>  Summer High Flow  1900-1929
+    ##  6 05BB001    1914-6-18 maximum        214 <NA>  Summer High Flow  1900-1929
+    ##  7 05BB001    1915-6-27 maximum        236 <NA>  Summer High Flow  1900-1929
+    ##  8 05BB001    1916-6-20 maximum        309 <NA>  Summer High Flow  1900-1929
+    ##  9 05BB001    1917-6-17 maximum        174 <NA>  Summer High Flow  1900-1929
+    ## 10 05BB001    1918-6-15 maximum        345 <NA>  Summer High Flow  1900-1929
     ## # ... with 208 more rows
 
 ``` r
 print(flow_sample1)
 ```
 
-    ## # A tibble: 218 x 7
-    ##    station_id date      extreme_type  flow sym   season decades  
-    ##    <chr>      <chr>     <chr>        <dbl> <chr> <fct>  <fct>    
-    ##  1 05BB001    1909-7-7  maximum        314 <NA>  Summer 1900-1929
-    ##  2 05BB001    1910-6-12 maximum        230 <NA>  Summer 1900-1929
-    ##  3 05BB001    1911-6-14 maximum        264 <NA>  Summer 1900-1929
-    ##  4 05BB001    1912-8-25 maximum        174 <NA>  Summer 1900-1929
-    ##  5 05BB001    1913-6-11 maximum        232 <NA>  Summer 1900-1929
-    ##  6 05BB001    1914-6-18 maximum        214 <NA>  Summer 1900-1929
-    ##  7 05BB001    1915-6-27 maximum        236 <NA>  Summer 1900-1929
-    ##  8 05BB001    1916-6-20 maximum        309 <NA>  Summer 1900-1929
-    ##  9 05BB001    1917-6-17 maximum        174 <NA>  Summer 1900-1929
-    ## 10 05BB001    1918-6-15 maximum        345 <NA>  Summer 1900-1929
+    ## # A tibble: 218 x 8
+    ##    station_id date      extreme_type  flow sym   season month_Flow decades  
+    ##    <chr>      <chr>     <chr>        <dbl> <chr> <fct>  <chr>      <fct>    
+    ##  1 05BB001    1909-7-7  maximum        314 <NA>  Summer High Flow  1900-1929
+    ##  2 05BB001    1910-6-12 maximum        230 <NA>  Summer High Flow  1900-1929
+    ##  3 05BB001    1911-6-14 maximum        264 <NA>  Summer High Flow  1900-1929
+    ##  4 05BB001    1912-8-25 maximum        174 <NA>  Summer High Flow  1900-1929
+    ##  5 05BB001    1913-6-11 maximum        232 <NA>  Summer High Flow  1900-1929
+    ##  6 05BB001    1914-6-18 maximum        214 <NA>  Summer High Flow  1900-1929
+    ##  7 05BB001    1915-6-27 maximum        236 <NA>  Summer High Flow  1900-1929
+    ##  8 05BB001    1916-6-20 maximum        309 <NA>  Summer High Flow  1900-1929
+    ##  9 05BB001    1917-6-17 maximum        174 <NA>  Summer High Flow  1900-1929
+    ## 10 05BB001    1918-6-15 maximum        345 <NA>  Summer High Flow  1900-1929
     ## # ... with 208 more rows
 
 Now I separate them again.
 
 ``` r
 (flow_sample1.1 <- flow_sample1 %>%
-    separate(date, into = c("year", "month", "day"), sep = ""))
+    separate(date, into = c( "year", "month", "day"), sep = "-"))
 ```
 
-    ## Warning: Expected 3 pieces. Additional pieces discarded in 218 rows [1, 2, 3, 4,
-    ## 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, ...].
-
-    ## # A tibble: 218 x 9
-    ##    station_id year  month day   extreme_type  flow sym   season decades  
-    ##    <chr>      <chr> <chr> <chr> <chr>        <dbl> <chr> <fct>  <fct>    
-    ##  1 05BB001    ""    1     9     maximum        314 <NA>  Summer 1900-1929
-    ##  2 05BB001    ""    1     9     maximum        230 <NA>  Summer 1900-1929
-    ##  3 05BB001    ""    1     9     maximum        264 <NA>  Summer 1900-1929
-    ##  4 05BB001    ""    1     9     maximum        174 <NA>  Summer 1900-1929
-    ##  5 05BB001    ""    1     9     maximum        232 <NA>  Summer 1900-1929
-    ##  6 05BB001    ""    1     9     maximum        214 <NA>  Summer 1900-1929
-    ##  7 05BB001    ""    1     9     maximum        236 <NA>  Summer 1900-1929
-    ##  8 05BB001    ""    1     9     maximum        309 <NA>  Summer 1900-1929
-    ##  9 05BB001    ""    1     9     maximum        174 <NA>  Summer 1900-1929
-    ## 10 05BB001    ""    1     9     maximum        345 <NA>  Summer 1900-1929
-    ## # ... with 208 more rows
+    ## # A tibble: 218 x 10
+    ##    station_id year  month day   extreme_type  flow sym   season month_Flow
+    ##    <chr>      <chr> <chr> <chr> <chr>        <dbl> <chr> <fct>  <chr>     
+    ##  1 05BB001    1909  7     7     maximum        314 <NA>  Summer High Flow 
+    ##  2 05BB001    1910  6     12    maximum        230 <NA>  Summer High Flow 
+    ##  3 05BB001    1911  6     14    maximum        264 <NA>  Summer High Flow 
+    ##  4 05BB001    1912  8     25    maximum        174 <NA>  Summer High Flow 
+    ##  5 05BB001    1913  6     11    maximum        232 <NA>  Summer High Flow 
+    ##  6 05BB001    1914  6     18    maximum        214 <NA>  Summer High Flow 
+    ##  7 05BB001    1915  6     27    maximum        236 <NA>  Summer High Flow 
+    ##  8 05BB001    1916  6     20    maximum        309 <NA>  Summer High Flow 
+    ##  9 05BB001    1917  6     17    maximum        174 <NA>  Summer High Flow 
+    ## 10 05BB001    1918  6     15    maximum        345 <NA>  Summer High Flow 
+    ## # ... with 208 more rows, and 1 more variable: decades <fct>
 
 ``` r
 print(flow_sample1.1)
 ```
 
-    ## # A tibble: 218 x 9
-    ##    station_id year  month day   extreme_type  flow sym   season decades  
-    ##    <chr>      <chr> <chr> <chr> <chr>        <dbl> <chr> <fct>  <fct>    
-    ##  1 05BB001    ""    1     9     maximum        314 <NA>  Summer 1900-1929
-    ##  2 05BB001    ""    1     9     maximum        230 <NA>  Summer 1900-1929
-    ##  3 05BB001    ""    1     9     maximum        264 <NA>  Summer 1900-1929
-    ##  4 05BB001    ""    1     9     maximum        174 <NA>  Summer 1900-1929
-    ##  5 05BB001    ""    1     9     maximum        232 <NA>  Summer 1900-1929
-    ##  6 05BB001    ""    1     9     maximum        214 <NA>  Summer 1900-1929
-    ##  7 05BB001    ""    1     9     maximum        236 <NA>  Summer 1900-1929
-    ##  8 05BB001    ""    1     9     maximum        309 <NA>  Summer 1900-1929
-    ##  9 05BB001    ""    1     9     maximum        174 <NA>  Summer 1900-1929
-    ## 10 05BB001    ""    1     9     maximum        345 <NA>  Summer 1900-1929
-    ## # ... with 208 more rows
+    ## # A tibble: 218 x 10
+    ##    station_id year  month day   extreme_type  flow sym   season month_Flow
+    ##    <chr>      <chr> <chr> <chr> <chr>        <dbl> <chr> <fct>  <chr>     
+    ##  1 05BB001    1909  7     7     maximum        314 <NA>  Summer High Flow 
+    ##  2 05BB001    1910  6     12    maximum        230 <NA>  Summer High Flow 
+    ##  3 05BB001    1911  6     14    maximum        264 <NA>  Summer High Flow 
+    ##  4 05BB001    1912  8     25    maximum        174 <NA>  Summer High Flow 
+    ##  5 05BB001    1913  6     11    maximum        232 <NA>  Summer High Flow 
+    ##  6 05BB001    1914  6     18    maximum        214 <NA>  Summer High Flow 
+    ##  7 05BB001    1915  6     27    maximum        236 <NA>  Summer High Flow 
+    ##  8 05BB001    1916  6     20    maximum        309 <NA>  Summer High Flow 
+    ##  9 05BB001    1917  6     17    maximum        174 <NA>  Summer High Flow 
+    ## 10 05BB001    1918  6     15    maximum        345 <NA>  Summer High Flow 
+    ## # ... with 208 more rows, and 1 more variable: decades <fct>
 
-### Column 2 `extreme_type`
-
-I am going to widen the data so we see the flow of each `extreme_type`
-by making `extreme_type` it’s own column.
+I am now doing to untidy the data by widening the data so we see the
+flow of each `extreme_type` by making `extreme_type` it’s own column.
 
 ``` r
 (flow_sample2 <- flow_sample %>%
@@ -300,38 +479,38 @@ by making `extreme_type` it’s own column.
               values_from = flow))
 ```
 
-    ## # A tibble: 218 x 9
-    ##    station_id  year month   day sym   season decades   maximum minimum
-    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <fct>       <dbl>   <dbl>
-    ##  1 05BB001     1909     7     7 <NA>  Summer 1900-1929     314      NA
-    ##  2 05BB001     1910     6    12 <NA>  Summer 1900-1929     230      NA
-    ##  3 05BB001     1911     6    14 <NA>  Summer 1900-1929     264      NA
-    ##  4 05BB001     1912     8    25 <NA>  Summer 1900-1929     174      NA
-    ##  5 05BB001     1913     6    11 <NA>  Summer 1900-1929     232      NA
-    ##  6 05BB001     1914     6    18 <NA>  Summer 1900-1929     214      NA
-    ##  7 05BB001     1915     6    27 <NA>  Summer 1900-1929     236      NA
-    ##  8 05BB001     1916     6    20 <NA>  Summer 1900-1929     309      NA
-    ##  9 05BB001     1917     6    17 <NA>  Summer 1900-1929     174      NA
-    ## 10 05BB001     1918     6    15 <NA>  Summer 1900-1929     345      NA
+    ## # A tibble: 218 x 10
+    ##    station_id  year month   day sym   season month_Flow decades  maximum minimum
+    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <chr>      <fct>      <dbl>   <dbl>
+    ##  1 05BB001     1909     7     7 <NA>  Summer High Flow  1900-19~     314      NA
+    ##  2 05BB001     1910     6    12 <NA>  Summer High Flow  1900-19~     230      NA
+    ##  3 05BB001     1911     6    14 <NA>  Summer High Flow  1900-19~     264      NA
+    ##  4 05BB001     1912     8    25 <NA>  Summer High Flow  1900-19~     174      NA
+    ##  5 05BB001     1913     6    11 <NA>  Summer High Flow  1900-19~     232      NA
+    ##  6 05BB001     1914     6    18 <NA>  Summer High Flow  1900-19~     214      NA
+    ##  7 05BB001     1915     6    27 <NA>  Summer High Flow  1900-19~     236      NA
+    ##  8 05BB001     1916     6    20 <NA>  Summer High Flow  1900-19~     309      NA
+    ##  9 05BB001     1917     6    17 <NA>  Summer High Flow  1900-19~     174      NA
+    ## 10 05BB001     1918     6    15 <NA>  Summer High Flow  1900-19~     345      NA
     ## # ... with 208 more rows
 
 ``` r
 arrange_all(flow_sample2)
 ```
 
-    ## # A tibble: 218 x 9
-    ##    station_id  year month   day sym   season decades   maximum minimum
-    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <fct>       <dbl>   <dbl>
-    ##  1 05BB001     1909     7     7 <NA>  Summer 1900-1929     314   NA   
-    ##  2 05BB001     1909    NA    NA <NA>  <NA>   1900-1929      NA   NA   
-    ##  3 05BB001     1910     6    12 <NA>  Summer 1900-1929     230   NA   
-    ##  4 05BB001     1910    NA    NA <NA>  <NA>   1900-1929      NA   NA   
-    ##  5 05BB001     1911     2    27 <NA>  Winter 1900-1929      NA    5.75
-    ##  6 05BB001     1911     6    14 <NA>  Summer 1900-1929     264   NA   
-    ##  7 05BB001     1912     3    14 <NA>  Spring 1900-1929      NA    5.8 
-    ##  8 05BB001     1912     8    25 <NA>  Summer 1900-1929     174   NA   
-    ##  9 05BB001     1913     3    18 B     Spring 1900-1929      NA    6.12
-    ## 10 05BB001     1913     6    11 <NA>  Summer 1900-1929     232   NA   
+    ## # A tibble: 218 x 10
+    ##    station_id  year month   day sym   season month_Flow decades  maximum minimum
+    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <chr>      <fct>      <dbl>   <dbl>
+    ##  1 05BB001     1909     7     7 <NA>  Summer High Flow  1900-19~     314   NA   
+    ##  2 05BB001     1909    NA    NA <NA>  <NA>   <NA>       1900-19~      NA   NA   
+    ##  3 05BB001     1910     6    12 <NA>  Summer High Flow  1900-19~     230   NA   
+    ##  4 05BB001     1910    NA    NA <NA>  <NA>   <NA>       1900-19~      NA   NA   
+    ##  5 05BB001     1911     2    27 <NA>  Winter Low Flow   1900-19~      NA    5.75
+    ##  6 05BB001     1911     6    14 <NA>  Summer High Flow  1900-19~     264   NA   
+    ##  7 05BB001     1912     3    14 <NA>  Spring Low Flow   1900-19~      NA    5.8 
+    ##  8 05BB001     1912     8    25 <NA>  Summer High Flow  1900-19~     174   NA   
+    ##  9 05BB001     1913     3    18 B     Spring Low Flow   1900-19~      NA    6.12
+    ## 10 05BB001     1913     6    11 <NA>  Summer High Flow  1900-19~     232   NA   
     ## # ... with 208 more rows
 
 It is clear that there are many missing values. First I am going to
@@ -375,196 +554,79 @@ flow_sample2.1 <- flow_sample2[-c(110,111),]
 arrange_all(flow_sample2.1)
 ```
 
-    ## # A tibble: 216 x 9
-    ##    station_id  year month   day sym   season decades   maximum minimum
-    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <fct>       <dbl>   <dbl>
-    ##  1 05BB001     1909     7     7 <NA>  Summer 1900-1929     314   NA   
-    ##  2 05BB001     1910     6    12 <NA>  Summer 1900-1929     230   NA   
-    ##  3 05BB001     1911     2    27 <NA>  Winter 1900-1929      NA    5.75
-    ##  4 05BB001     1911     6    14 <NA>  Summer 1900-1929     264   NA   
-    ##  5 05BB001     1912     3    14 <NA>  Spring 1900-1929      NA    5.8 
-    ##  6 05BB001     1912     8    25 <NA>  Summer 1900-1929     174   NA   
-    ##  7 05BB001     1913     3    18 B     Spring 1900-1929      NA    6.12
-    ##  8 05BB001     1913     6    11 <NA>  Summer 1900-1929     232   NA   
-    ##  9 05BB001     1914     6    18 <NA>  Summer 1900-1929     214   NA   
-    ## 10 05BB001     1914    11    17 <NA>  Autumn 1900-1929      NA    7.16
+    ## # A tibble: 216 x 10
+    ##    station_id  year month   day sym   season month_Flow decades  maximum minimum
+    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <chr>      <fct>      <dbl>   <dbl>
+    ##  1 05BB001     1909     7     7 <NA>  Summer High Flow  1900-19~     314   NA   
+    ##  2 05BB001     1910     6    12 <NA>  Summer High Flow  1900-19~     230   NA   
+    ##  3 05BB001     1911     2    27 <NA>  Winter Low Flow   1900-19~      NA    5.75
+    ##  4 05BB001     1911     6    14 <NA>  Summer High Flow  1900-19~     264   NA   
+    ##  5 05BB001     1912     3    14 <NA>  Spring Low Flow   1900-19~      NA    5.8 
+    ##  6 05BB001     1912     8    25 <NA>  Summer High Flow  1900-19~     174   NA   
+    ##  7 05BB001     1913     3    18 B     Spring Low Flow   1900-19~      NA    6.12
+    ##  8 05BB001     1913     6    11 <NA>  Summer High Flow  1900-19~     232   NA   
+    ##  9 05BB001     1914     6    18 <NA>  Summer High Flow  1900-19~     214   NA   
+    ## 10 05BB001     1914    11    17 <NA>  Autumn Low Flow   1900-19~      NA    7.16
     ## # ... with 206 more rows
 
 Now I will put it back.
 
 ``` r
-(flow_sample2.2 <- flow_sample2.1 %>% 
-  pivot_longer(cols = c(-station_id, -year, -month, -day, -sym, -season, -decades ), 
+flow_sample2.2 <- flow_sample2 %>% 
+  pivot_longer(cols = c(maximum, minimum ), 
                names_to  = "extreme_type", 
-               values_to = "flow"))
-```
-
-    ## # A tibble: 432 x 9
-    ##    station_id  year month   day sym   season decades   extreme_type  flow
-    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <fct>     <chr>        <dbl>
-    ##  1 05BB001     1909     7     7 <NA>  Summer 1900-1929 maximum        314
-    ##  2 05BB001     1909     7     7 <NA>  Summer 1900-1929 minimum         NA
-    ##  3 05BB001     1910     6    12 <NA>  Summer 1900-1929 maximum        230
-    ##  4 05BB001     1910     6    12 <NA>  Summer 1900-1929 minimum         NA
-    ##  5 05BB001     1911     6    14 <NA>  Summer 1900-1929 maximum        264
-    ##  6 05BB001     1911     6    14 <NA>  Summer 1900-1929 minimum         NA
-    ##  7 05BB001     1912     8    25 <NA>  Summer 1900-1929 maximum        174
-    ##  8 05BB001     1912     8    25 <NA>  Summer 1900-1929 minimum         NA
-    ##  9 05BB001     1913     6    11 <NA>  Summer 1900-1929 maximum        232
-    ## 10 05BB001     1913     6    11 <NA>  Summer 1900-1929 minimum         NA
-    ## # ... with 422 more rows
-
-``` r
+               values_to = "flow")
 arrange_all(flow_sample2.2)
 ```
 
-    ## # A tibble: 432 x 9
-    ##    station_id  year month   day sym   season decades   extreme_type   flow
-    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <fct>     <chr>         <dbl>
-    ##  1 05BB001     1909     7     7 <NA>  Summer 1900-1929 maximum      314   
-    ##  2 05BB001     1909     7     7 <NA>  Summer 1900-1929 minimum       NA   
-    ##  3 05BB001     1910     6    12 <NA>  Summer 1900-1929 maximum      230   
-    ##  4 05BB001     1910     6    12 <NA>  Summer 1900-1929 minimum       NA   
-    ##  5 05BB001     1911     2    27 <NA>  Winter 1900-1929 maximum       NA   
-    ##  6 05BB001     1911     2    27 <NA>  Winter 1900-1929 minimum        5.75
-    ##  7 05BB001     1911     6    14 <NA>  Summer 1900-1929 maximum      264   
-    ##  8 05BB001     1911     6    14 <NA>  Summer 1900-1929 minimum       NA   
-    ##  9 05BB001     1912     3    14 <NA>  Spring 1900-1929 maximum       NA   
-    ## 10 05BB001     1912     3    14 <NA>  Spring 1900-1929 minimum        5.8 
-    ## # ... with 422 more rows
+    ## # A tibble: 436 x 10
+    ##    station_id  year month   day sym   season month_Flow decades   extreme_type
+    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <chr>      <fct>     <chr>       
+    ##  1 05BB001     1909     7     7 <NA>  Summer High Flow  1900-1929 maximum     
+    ##  2 05BB001     1909     7     7 <NA>  Summer High Flow  1900-1929 minimum     
+    ##  3 05BB001     1909    NA    NA <NA>  <NA>   <NA>       1900-1929 maximum     
+    ##  4 05BB001     1909    NA    NA <NA>  <NA>   <NA>       1900-1929 minimum     
+    ##  5 05BB001     1910     6    12 <NA>  Summer High Flow  1900-1929 maximum     
+    ##  6 05BB001     1910     6    12 <NA>  Summer High Flow  1900-1929 minimum     
+    ##  7 05BB001     1910    NA    NA <NA>  <NA>   <NA>       1900-1929 maximum     
+    ##  8 05BB001     1910    NA    NA <NA>  <NA>   <NA>       1900-1929 minimum     
+    ##  9 05BB001     1911     2    27 <NA>  Winter Low Flow   1900-1929 maximum     
+    ## 10 05BB001     1911     2    27 <NA>  Winter Low Flow   1900-1929 minimum     
+    ## # ... with 426 more rows, and 1 more variable: flow <dbl>
 
 You can see that we once again have variable `extreme_type` with values
 minimum and maximum.
 
-### Column 3 `month`
-
-### Column 4 `day`
-
-### Column 5 `flow`
-
-### Column 6 `sym`
-
-First lets look and see how many missing values there are.
-
-``` r
-sum(is.na(flow_sample$sym))
-```
-
-    ## [1] 119
-
-That is a lot of missing data. Once again I am going to remove rows 110
-and 111.
-
-``` r
-flow_sample6 <- flow_sample[-c(110,111),]
-arrange_all(flow_sample2.1)
-```
-
-    ## # A tibble: 216 x 9
-    ##    station_id  year month   day sym   season decades   maximum minimum
-    ##    <chr>      <dbl> <dbl> <dbl> <chr> <fct>  <fct>       <dbl>   <dbl>
-    ##  1 05BB001     1909     7     7 <NA>  Summer 1900-1929     314   NA   
-    ##  2 05BB001     1910     6    12 <NA>  Summer 1900-1929     230   NA   
-    ##  3 05BB001     1911     2    27 <NA>  Winter 1900-1929      NA    5.75
-    ##  4 05BB001     1911     6    14 <NA>  Summer 1900-1929     264   NA   
-    ##  5 05BB001     1912     3    14 <NA>  Spring 1900-1929      NA    5.8 
-    ##  6 05BB001     1912     8    25 <NA>  Summer 1900-1929     174   NA   
-    ##  7 05BB001     1913     3    18 B     Spring 1900-1929      NA    6.12
-    ##  8 05BB001     1913     6    11 <NA>  Summer 1900-1929     232   NA   
-    ##  9 05BB001     1914     6    18 <NA>  Summer 1900-1929     214   NA   
-    ## 10 05BB001     1914    11    17 <NA>  Autumn 1900-1929      NA    7.16
-    ## # ... with 206 more rows
-
-Lets look at the breakdown of the values of this variable.
-
-``` r
-table(flow_sample6$sym)
-```
-
-    ## 
-    ##  A  B  E 
-    ##  2 95  2
-
-It looks like most of the values are B with only 4 being divided between
-A and E. I am going to change this variable to have values B or other.
-
-``` r
-flow_sample6.1 <- flow_sample6 %>% 
-  
-  mutate(sym = ifelse(is.na(sym), "Other",
-                      ifelse(sym == "B", "B", "Other")))
-
-table(flow_sample$sym)
-```
-
-    ## 
-    ##  A  B  E 
-    ##  2 95  2
-
-``` r
-head(flow_sample)
-```
-
-    ## # A tibble: 6 x 9
-    ##   station_id  year extreme_type month   day  flow sym   season decades  
-    ##   <chr>      <dbl> <chr>        <dbl> <dbl> <dbl> <chr> <fct>  <fct>    
-    ## 1 05BB001     1909 maximum          7     7   314 <NA>  Summer 1900-1929
-    ## 2 05BB001     1910 maximum          6    12   230 <NA>  Summer 1900-1929
-    ## 3 05BB001     1911 maximum          6    14   264 <NA>  Summer 1900-1929
-    ## 4 05BB001     1912 maximum          8    25   174 <NA>  Summer 1900-1929
-    ## 5 05BB001     1913 maximum          6    11   232 <NA>  Summer 1900-1929
-    ## 6 05BB001     1914 maximum          6    18   214 <NA>  Summer 1900-1929
-
-This should have removed missing values from this variable. Let’s check.
-
-``` r
-sum(is.na(flow_sample6.1$sym))
-```
-
-    ## [1] 0
-
-Great\! \#\#\# Column 7 `season` First I will create a subset of
-`flow_sample` containing only the season `Winter`.
-
-``` r
-(flow_sample7 <- flow_sample %>%
-   filter(season == "Winter"))
-```
-
-    ## # A tibble: 57 x 9
-    ##    station_id  year extreme_type month   day  flow sym   season decades  
-    ##    <chr>      <dbl> <chr>        <dbl> <dbl> <dbl> <chr> <fct>  <fct>    
-    ##  1 05BB001     1911 minimum          2    27  5.75 <NA>  Winter 1900-1929
-    ##  2 05BB001     1915 minimum          1    27  6.94 <NA>  Winter 1900-1929
-    ##  3 05BB001     1917 minimum          2    23  6.06 B     Winter 1900-1929
-    ##  4 05BB001     1918 minimum          2    20  6.03 B     Winter 1900-1929
-    ##  5 05BB001     1919 minimum          2    28  4.56 B     Winter 1900-1929
-    ##  6 05BB001     1923 minimum         12    20  6.43 E     Winter 1900-1929
-    ##  7 05BB001     1925 minimum         12    31  5.44 B     Winter 1900-1929
-    ##  8 05BB001     1927 minimum          2    17  6.48 B     Winter 1900-1929
-    ##  9 05BB001     1928 minimum         12    29  6.09 B     Winter 1900-1929
-    ## 10 05BB001     1930 minimum         12    29  6    B     Winter 1930-1959
-    ## # ... with 47 more rows
-
-``` r
-print(flow_sample7)
-```
-
-    ## # A tibble: 57 x 9
-    ##    station_id  year extreme_type month   day  flow sym   season decades  
-    ##    <chr>      <dbl> <chr>        <dbl> <dbl> <dbl> <chr> <fct>  <fct>    
-    ##  1 05BB001     1911 minimum          2    27  5.75 <NA>  Winter 1900-1929
-    ##  2 05BB001     1915 minimum          1    27  6.94 <NA>  Winter 1900-1929
-    ##  3 05BB001     1917 minimum          2    23  6.06 B     Winter 1900-1929
-    ##  4 05BB001     1918 minimum          2    20  6.03 B     Winter 1900-1929
-    ##  5 05BB001     1919 minimum          2    28  4.56 B     Winter 1900-1929
-    ##  6 05BB001     1923 minimum         12    20  6.43 E     Winter 1900-1929
-    ##  7 05BB001     1925 minimum         12    31  5.44 B     Winter 1900-1929
-    ##  8 05BB001     1927 minimum          2    17  6.48 B     Winter 1900-1929
-    ##  9 05BB001     1928 minimum         12    29  6.09 B     Winter 1900-1929
-    ## 10 05BB001     1930 minimum         12    29  6    B     Winter 1930-1959
-    ## # ... with 47 more rows
-
-### Column 8 `decades`
-
 ## Task 2.3
+
+``` r
+flow_sampleTR <-flow_sample[-c(110,111),] %>%
+  filter(extreme_type == "maximum") %>%
+select(-c(station_id, sym)) %>%
+  select(year, season, flow, month, day, extreme_type)
+
+
+arrange_all(flow_sampleTR)
+```
+
+    ## # A tibble: 109 x 6
+    ##     year season  flow month   day extreme_type
+    ##    <dbl> <fct>  <dbl> <dbl> <dbl> <chr>       
+    ##  1  1909 Summer   314     7     7 maximum     
+    ##  2  1910 Summer   230     6    12 maximum     
+    ##  3  1911 Summer   264     6    14 maximum     
+    ##  4  1912 Summer   174     8    25 maximum     
+    ##  5  1913 Summer   232     6    11 maximum     
+    ##  6  1914 Summer   214     6    18 maximum     
+    ##  7  1915 Summer   236     6    27 maximum     
+    ##  8  1916 Summer   309     6    20 maximum     
+    ##  9  1917 Summer   174     6    17 maximum     
+    ## 10  1918 Summer   345     6    15 maximum     
+    ## # ... with 99 more rows
+
+This is the data I will carry forwards. I have removed the two row with
+no flow recorded. As well I removed `station_id` as there is only one
+station, and `sym` as there are more missing than present values. I
+filter for the extreme type `maximum` as there is much more variation
+and I think it may be more interesting to explore. Finally I rearrange
+the order of the columns.

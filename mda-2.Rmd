@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r}
 library(datateachr)
 library(tidyverse)
-library(plyr)
+library(dplyr)
 library(ggridges)
 ```
 
@@ -69,33 +69,71 @@ flow_sample %>% filter(season == "Winter") %>% select(flow) %>% summary()
 
 Now I find the mean of flow for the 4 seasons. .
 ```{r}
-mflow = ddply(flow_sample, "season", summarise, grp.mean=mean(flow))
-mflow
+#mflow = ddply(flow_sample, "season", summarise, grp.mean=mean(flow))
+#mflow
 ```
+:( it was working before and then randomly stopped. I really don't know why. Sorry.
 
 Finally I create a plot
 ```{r}
-plot1 <- ggplot(flow_sample, aes(x= flow, fill=season, color = season)) + geom_histogram(position="identity", alpha=0.5)
-plot1 +   geom_vline(data=mflow, aes(xintercept=grp.mean, color=season), linetype="dashed")
+#plot1 <- ggplot(flow_sample, aes(x= flow, fill=season, color = season)) + geom_histogram(position="identity", alpha=0.5)
+#plot1 +   geom_vline(data=mflow, aes(xintercept=grp.mean, color=season))
 ```
 
 ### Exploring question 2
 
 I compute the range, mean, median, and sd across month
 ```{r}
+flow_sample %>%
+  group_by(month) %>%
+  summarise(mean = mean(flow), 
+            r =range(flow), 
+            sd = sd(flow), 
+            var = var(flow))
+```
+I tried to create boxplots forwhat I thought would be the high and low flow months.
+``` {r}
+flow_sample <- flow_sample %>% 
+  mutate(month_Flow = ifelse( month == 4 | month ==5 | month == 6 | month==7| month== 8, "High Flow", "Low Flow"))
 
-group_by(flow_sample, month) %>%
-  summarise(m = mean(flow), r =range(flow), sd = sd(flow), var = var(flow))
+flow_sample %>% 
+  filter(!is.na(month)) %>% 
+  ggplot() +
+  aes(x=month, y=flow, fill= month) +
+  geom_boxplot() +
+  facet_wrap(~month_Flow, scales = "free") +
+  labs(
+    title = "Boxplot of flow by Season",
+    x = "Season",
+    y = "Flow"
+  ) +
+  theme(legend.position = "none") 
+```
 
+```{r}
+flow_sample %>% 
+  group_by(month) %>% 
+  summarise(cumflow = sum(flow, na.rm = T)) %>% 
+  ggplot() +
+  aes(x=month, y=cumflow) +
+geom_line() +
+  geom_point() +
+  scale_x_continuous(breaks = unique(flow_sample$month)) +
+  labs(
+    title = "Cumulative flow along the year",
+  
+    x = "Month",
+    y = "Flow"
+  ) 
 ```
 
 ### Exploring question 3
-I compute the number of observations for `extreme_type` (catagorical)
+I compute the number of observations for `extreme_type` (categorical)
 ```{r}
 flow_sample %>%
   count(extreme_type)
 ```
-Now I graph extreme and month
+Now I graph extreme and flow
 ```{r}
 flow_sample %>%
   ggplot(aes(x=flow, y=extreme_type)) +  
@@ -122,6 +160,15 @@ flow_sample <- flow_sample %>%
 
 ```
 
+
+```{r}
+flow_sample %>% filter(decades == "1900-1929") %>% select(flow) %>% summary()
+flow_sample %>% filter(decades == "1930-1959") %>% select(flow) %>% summary()
+flow_sample %>% filter(decades == "1960-1989") %>% select(flow) %>% summary()
+flow_sample %>% filter(decades == "1990-2019") %>% select(flow) %>% summary()
+
+```
+
 Now I will create a graph of flow and decades
 
 ```{r}
@@ -141,11 +188,14 @@ flow_sample %>%
 
 ## Task 1.3
 
-### Revised questions
-
-Is the downward trend across `decades` statistically significant?
+I am closer to answering my questions. Directly above I see that there is a lot of variation in flow within each 29 year period. However each of the bins seam to have a somewhat similar spread with perhaps a slight downward trend. The means do apear to be decreasing. There is the notable exception of the 2013 flood. 
 
 
+There is obviously strong relationships between time of year (`month` and `season`), `extreme_type` and `flow`, but is one significantly better for predicting flow? 
+
+Is the variation in flow year to year associated with the month in which flow was collected??
+
+These are the questions I find most interesting.
 
 
 # Task 2
@@ -154,9 +204,11 @@ Here I will tidy the data. Lets take a quick look at `flow_sample`. This is the 
 head(flow_sample)
 ```
 
+Given the definition I believe this data set is tidy. Each column is a variable `year`, `extreme_type` `month` `day`, `flow`, `sym` `season` and `decades`. Each row is an observation (one for each year). All of the cells contain the value for that variable on a given year.
+
 ## Task 2.1
 
-### Cloumn 1 `Year`
+Now I play with some functions from tidyverse.
 
 I will unite the year, month, and day to make date.
 
@@ -169,13 +221,11 @@ Now I separate them again.
 
 ```{r}
 (flow_sample1.1 <- flow_sample1 %>%
-    separate(date, into = c("year", "month", "day"), sep = ""))
+    separate(date, into = c( "year", "month", "day"), sep = "-"))
 print(flow_sample1.1)
 ```
+I am now doing to untidy the data by widening the data so we see the flow of each `extreme_type` by  making `extreme_type` it's own column.
 
-### Column 2 `extreme_type`
-
-I am going to widen the data so we see the flow of each `extreme_type` by  making `extreme_type` it's own column.
 ```{r}
 (flow_sample2 <- flow_sample %>%
   pivot_wider(id_cols = c(-extreme_type, -flow),
@@ -210,62 +260,27 @@ arrange_all(flow_sample2.1)
 Now I will put it back. 
 
 ```{r}
-(flow_sample2.2 <- flow_sample2.1 %>% 
-  pivot_longer(cols = c(-station_id, -year, -month, -day, -sym, -season, -decades ), 
+flow_sample2.2 <- flow_sample2 %>% 
+  pivot_longer(cols = c(maximum, minimum ), 
                names_to  = "extreme_type", 
-               values_to = "flow"))
+               values_to = "flow")
 arrange_all(flow_sample2.2)
 ```
 You can see that we once again have variable `extreme_type` with values minimum and maximum.
 
-### Column 3 `month`
-### Column 4 `day`
-### Column 5 `flow`
-### Column 6 `sym`
-First lets look and see how many missing values there are.
-```{r}
-sum(is.na(flow_sample$sym))
-```
-That is a lot of missing data. Once again I am going to remove rows 110 and 111.
 
-```{r}
-flow_sample6 <- flow_sample[-c(110,111),]
-arrange_all(flow_sample2.1)
-```
-
-Lets look at the breakdown of the values of this variable. 
-
-```{r}
-table(flow_sample6$sym)
-```
-It looks like most of the values are B with only 4 being divided between A and E. I am going to change this variable to have values B or other.
-```{r}
-flow_sample6.1 <- flow_sample6 %>% 
-  
-  mutate(sym = ifelse(is.na(sym), "Other",
-                      ifelse(sym == "B", "B", "Other")))
-
-table(flow_sample$sym)
-head(flow_sample)
-
-```
-This should have removed missing values from this variable. Let's check.
-
-```{r}
-sum(is.na(flow_sample6.1$sym))
-```
-Great! 
-### Column 7 `season`
-First I will create a subset of `flow_sample`
-containing only the season `Winter`.
-
-```{r}
-(flow_sample7 <- flow_sample %>%
-   filter(season == "Winter"))
-print(flow_sample7)
-```
-
-### Column 8 `decades`
 
 ## Task 2.3
+
+```{r}
+flow_sampleTR <-flow_sample[-c(110,111),] %>%
+  filter(extreme_type == "maximum") %>%
+select(-c(station_id, sym)) %>%
+  select(year, season, flow, month, day, extreme_type)
+
+
+arrange_all(flow_sampleTR)
+```
+This is the data I will carry forwards. I have removed the two row with no flow recorded. As well I removed `station_id` as there is only one station, and `sym` as there are more missing than present values. I filter for the extreme type `maximum` as there is much more variation and I think it may be more interesting to explore. Finally I rearrange the order of the columns.
+
 
