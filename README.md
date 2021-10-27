@@ -9,15 +9,10 @@ There 5 main files in this folder:
 
 - mda-1.Rmd
 
-- mda-1.md
-
 - mda-2.Rmd
 
-- mda-2 md
-
 - mda-3.Rmd
-
-- mda-3 md
+- output
 
 ## How to run the code
 The only code that needs to be ran is in the *.Rmd* files; it can be ran using **R studio**, which will allow you to execute the lines of code or you can view the knitted md version here on git.
