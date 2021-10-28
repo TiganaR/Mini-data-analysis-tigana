@@ -84,7 +84,7 @@ Finally I create a plot
 
 I compute the range, mean, median, and sd across month
 ```{r}
-flow_sample %>%
+flow_month_stats <- flow_sample %>%
   group_by(month) %>%
   summarise(mean = mean(flow), 
             r =range(flow), 

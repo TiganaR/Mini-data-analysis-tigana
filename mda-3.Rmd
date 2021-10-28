@@ -36,6 +36,28 @@ library(datateachr) # <- might contain the data you picked!
 library(tidyverse)
 library(lubridate)
 ```
+``` {r}
+flow_sample <- flow_sample %>% 
+  mutate(season = case_when(
+    month > 5 & month < 9 ~ "Summer",
+    month > 2 & month < 6 ~ "Spring",
+    (month > 0 & month < 3) | month == 12  ~ "Winter",
+    month > 8 & month < 12 ~ "Autumn",
+    TRUE ~ as.character(month)
+  ) %>% as.factor()
+  )
+```
+
+```{r}
+flow_sampleTR <-flow_sample[-c(110,111),] %>%
+  filter(extreme_type == "maximum") %>%
+select(-c(station_id, sym)) %>%
+  select(year, season, flow, month, day, extreme_type)
+
+
+arrange_all(flow_sampleTR)
+```
+
 
 From Milestone 2, you chose two research questions. What were they? Put them here.
 
@@ -54,7 +76,7 @@ But first, tasks 1 and 2 below ask you to modify a plot you made in a previous m
 
 <!-------------------------- Start your work below ---------------------------->
 ``` {r}
-flow_sample %>% 
+flow_sampleTR %>% 
   filter(!is.na(season)) %>% 
   group_by(year, season) %>% 
   summarise(cumflow = sum(flow, na.rm = T)) %>% 
@@ -79,8 +101,23 @@ Now, choose two of the following tasks.
 
 1. Produce a new plot that reorders a factor in your original plot, using the `forcats` package (3 points). Then, in a sentence or two, briefly explain why you chose this ordering (1 point here for demonstrating understanding of the reordering, and 1 point for demonstrating some justification for the reordering, which could be subtle or speculative.)
 
+2. Produce a new plot that groups some factor levels together into an "other" category (or something similar), using the `forcats` package (3 points). Then, in a sentence or two, briefly explain why you chose this grouping (1 point here for demonstrating understanding of the grouping, and 1 point for demonstrating some justification for the grouping, which could be subtle or speculative.)
+
+3. If your data has some sort of time-based column like a date (but something more granular than just a year):
+    1. Make a new column that uses a function from the `lubridate` or `tsibble` package to modify your original time-based column. (3 points)
+        - Note that you might first have to _make_ a time-based column using a function like `ymd()`, but this doesn't count.
+        - Examples of something you might do here: extract the day of the year from a date, or extract the weekday, or let 24 hours elapse on your dates.
+    2. Then, in a sentence or two, explain how your new column might be useful in exploring a research question. (1 point for demonstrating understanding of the function you used, and 1 point for your justification, which could be subtle or speculative).
+        - For example, you could say something like "Investigating the day of the week might be insightful because penguins don't work on weekends, and so may respond differently".
+
+
+
+<!-------------------------- Start your work below ---------------------------->
+
+**Task Number**: 1
+
 ```{r}
-flow_sample %>% 
+flow_sampleTR %>% 
   mutate(season = fct_relevel(season, 
                               c('Autumn', 'Winter', 'Spring', 'Summer'))) %>%
   filter(!is.na(season)) %>% 
@@ -102,38 +139,21 @@ flow_sample %>%
   
 ```
 
-2. Produce a new plot that groups some factor levels together into an "other" category (or something similar), using the `forcats` package (3 points). Then, in a sentence or two, briefly explain why you chose this grouping (1 point here for demonstrating understanding of the grouping, and 1 point for demonstrating some justification for the grouping, which could be subtle or speculative.)
-
-3. If your data has some sort of time-based column like a date (but something more granular than just a year):
-    1. Make a new column that uses a function from the `lubridate` or `tsibble` package to modify your original time-based column. (3 points)
-        - Note that you might first have to _make_ a time-based column using a function like `ymd()`, but this doesn't count.
-        - Examples of something you might do here: extract the day of the year from a date, or extract the weekday, or let 24 hours elapse on your dates.
-    2. Then, in a sentence or two, explain how your new column might be useful in exploring a research question. (1 point for demonstrating understanding of the function you used, and 1 point for your justification, which could be subtle or speculative).
-        - For example, you could say something like "Investigating the day of the week might be insightful because penguins don't work on weekends, and so may respond differently".
-    
-```{r}
-flow_sample1 = flow_sample %>% 
-  unite(col = "date", c(year, month, day), sep = "-") %>% 
-  mutate(date = ymd(date))
-
-
-```
-
-
-<!-------------------------- Start your work below ---------------------------->
-
-**Task Number**: FILL_THIS_IN
-
-
 
 <!----------------------------------------------------------------------------->
 
 
 <!-------------------------- Start your work below ---------------------------->
 
-**Task Number**: FILL_THIS_IN
+**Task Number**: 3
+```{r}
+flow_sample1 = flow_sampleTR %>% 
+  unite(col = "date", c(year, month, day), sep = "-") %>% 
+  mutate(date = ymd(date))
 
 
+```
+I chose to investigate because.
 
 <!----------------------------------------------------------------------------->
 
@@ -147,11 +167,10 @@ Pick a research question, and pick a variable of interest (we'll call it "Y") th
 
 <!-------------------------- Start your work below ---------------------------->
 
-**Research Question**: There is obviously strong relationships between time of year (`month` and `season`), `extreme_type` and `flow`, but is one significantly better for predicting flow?
+**Research Question**:
+Is there a significant difference of flow average among the seasons?
 
-There is a significant flow average difference among the seasons?
-
-**Variable of interest**: FILL_THIS_IN
+**Variable of interest**: `Flow`
 
 <!----------------------------------------------------------------------------->
 
@@ -171,12 +190,12 @@ Fit a model or run a hypothesis test that provides insight on this variable with
 ## Analysis of variance (ANOVA TEST)
 
 ```{r}
-anova_model <- aov(flow ~ season, data=flow_sample)
+anova_model <- aov(flow ~ season, data=flow_sampleTR)
 summary(anova_model)
 ```
 
 ```{r}
-ggplot(data=flow_sample, aes(x=season, y=flow, fill=season)) +
+ggplot(data=flow_sampleTR, aes(x=season, y=flow, fill=season)) +
   geom_bar(stat="summary", fun.y="mean") +
   stat_summary(geom = "errorbar", fun.data = mean_se, width=.4) 
 ```
@@ -194,7 +213,7 @@ Produce something relevant from your fitted model: either predictions on Y, or a
 <!-------------------------- Start your work below ---------------------------->
 
 ```{r}
-linear_model <- lm(flow ~ season, data=flow_sample)
+linear_model <- lm(flow ~ season, data=flow_sampleTR)
 summary(linear_model)
 ```
 
@@ -231,11 +250,23 @@ Take a summary table that you made from Milestone 2 (Exercise 1.2), and write it
 - **Reproducibility criteria**: You should be able to delete the csv file, and remake it simply by knitting this Rmd file. 
   
 <!-------------------------- Start your work below ---------------------------->
+```{r}
+flow_month_stats <- flow_sample %>%
+  group_by(month) %>%
+  summarise(mean = mean(flow), 
+            r =range(flow), 
+            sd = sd(flow), 
+            var = var(flow))
+```
+I am storing this summary table from milestone 2.
 
 ```{r}
-# Use write.csv function...
-# ?write.csv
-# write.csv(my_table_R_object, "my_path/table.csv")
+# here::here()
+# dir.create(here::here("Output"))
+
+write.csv(flow_month_stats,"Output/table.csv")
+
+#write_csv(flow_month_stats, here("Output", "m2-ex1.2-summary.csv"))
 ```
 
 
@@ -249,10 +280,14 @@ Write your model object from Exercise 2 to an R binary file (an RDS), and load i
 
 <!-------------------------- Start your work below ---------------------------->
 ```{r}
-#saveRDS(linear_model, "linear_model.RDS")
-#linear_model = readRDS("linear_model.RDS")
+saveRDS(linear_model, here::here("linear_model.RDS"))
+
 ```
 
+```{r}
+my_model_rds <- readRDS(here::here("linear_model.RDS"))
+my_model_rds
+```
 
 <!----------------------------------------------------------------------------->
 
