@@ -261,12 +261,8 @@ flow_month_stats <- flow_sample %>%
 I am storing this summary table from milestone 2.
 
 ```{r}
-# here::here()
-# dir.create(here::here("Output"))
-
-write.csv(flow_month_stats,"Output/table.csv")
-
-#write_csv(flow_month_stats, here("Output", "m2-ex1.2-summary.csv"))
+flow_month_stats
+write.csv(flow_month_stats,here::here("Output/table.csv"))
 ```
 
 
