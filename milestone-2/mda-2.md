@@ -152,7 +152,7 @@ Finally I create a plot
 I compute the range, mean, median, and sd across month
 
 ``` r
-flow_sample %>%
+flow_month_stats <- flow_sample %>%
   group_by(month) %>%
   summarise(mean = mean(flow), 
             r =range(flow), 
@@ -161,22 +161,6 @@ flow_sample %>%
 ```
 
     ## `summarise()` has grouped output by 'month'. You can override using the `.groups` argument.
-
-    ## # A tibble: 22 x 5
-    ## # Groups:   month [11]
-    ##    month   mean      r     sd      var
-    ##    <dbl>  <dbl>  <dbl>  <dbl>    <dbl>
-    ##  1     1   6.50   3.62  1.22     1.48 
-    ##  2     1   6.50   8.41  1.22     1.48 
-    ##  3     2   6.07   4.08  0.956    0.914
-    ##  4     2   6.07   7.98  0.956    0.914
-    ##  5     3   6.42   4.14  1.03     1.06 
-    ##  6     3   6.42   8.44  1.03     1.06 
-    ##  7     4   6.17   4.9   0.833    0.694
-    ##  8     4   6.17   7.53  0.833    0.694
-    ##  9     5 194.   133    41.8   1750.   
-    ## 10     5 194.   289    41.8   1750.   
-    ## # ... with 12 more rows
 
 I tried to create boxplots forwhat I thought would be the high and low
 flow months.

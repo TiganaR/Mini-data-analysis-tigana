@@ -50,6 +50,7 @@ First I will compute the statistics for flow for the different seasons. First `S
 ```{r}
 flow_sample %>% filter(season == "Summer") %>% select(flow) %>% summary()
 ```
+
 `Spring`
 
 ```{r}

@@ -261,7 +261,6 @@ flow_month_stats <- flow_sample %>%
 I am storing this summary table from milestone 2.
 
 ```{r}
-flow_month_stats
 write.csv(flow_month_stats,here::here("Output/table.csv"))
 ```
 
@@ -276,12 +275,11 @@ Write your model object from Exercise 2 to an R binary file (an RDS), and load i
 
 <!-------------------------- Start your work below ---------------------------->
 ```{r}
-saveRDS(linear_model, here::here("linear_model.RDS"))
-
+saveRDS(linear_model, here::here("Output/linear_model.RDS"))
 ```
 
 ```{r}
-my_model_rds <- readRDS(here::here("linear_model.RDS"))
+my_model_rds <- readRDS(here::here("Output/linear_model.RDS"))
 my_model_rds
 ```
 
