@@ -1,19 +1,17 @@
-# Mini-data-analysis-tigana
+# Mini-Data_Analysis_Tigana
 
-## What is this project?
-This project is designed to help introduce us to doing data analysis.
+This is Tigana Runte's repository for the STAT545A Fall 2021 Mini Data Analysis project.
 
-## What files are in the project folder?
-There 5 main files in this folder:
-- [README.md](https://github.com/TiganaR/Mini-data-analysis-tigana/blob/main/README.md). This is the file that you are reading right now; it contains a description of the project and its content. 
+### Milestone Tracking
 
-- mda-1.Rmd
+- [x] Milestone 1 (October 12, 2021)
+- [x] Milestone 2 (October 16, 2021)
+- [x] Milestone 3 (October 23, 2021)
 
-- mda-2.Rmd
+### File List
 
-- mda-3.Rmd
-- output
-
-## How to run the code
-The only code that needs to be ran is in the *.Rmd* files; it can be ran using **R studio**, which will allow you to execute the lines of code or you can view the knitted md version here on git.
-
+- **`README.md`:** This file. It contains information about the milestones and files in the repository.
+- **`milestone-1/`:** The R markdown file containing the source code for the Milestone 1 submission. You can run the code in R.
+- **`milestone-2/`:** The R markdown file containing the source code for the Milestone 1 submission. You can run the code in R.
+- **`milestone-3/`:** The R markdown file containing the source code for the Milestone 1 submission. You can run the code in R.
+- **`output/`**
